@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f6f5f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141414" media="(prefers-color-scheme: dark)">
+<title>Заметки</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --text: #1f1e1c; --muted: #6b6a66; --line: #dedcd5;
+    --accent: #2563eb; --on-accent: #ffffff;
+    --ok: #166534; --ok-soft: #e6f4ea; --warn: #8a5300; --warn-soft: #fdf3dc; --err: #b42318; --err-soft: #fdeceb;
+    color-scheme: light dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141414; --card: #1e1e1e; --text: #ecebe8; --muted: #a3a29e; --line: #3a3a38;
+      --accent: #4f8cff; --on-accent: #0b0b0b;
+      --ok: #6ee7a0; --ok-soft: #13301f; --warn: #f5c451; --warn-soft: #362a0d; --err: #fb8f86; --err-soft: #3b1715;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+  button { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+  main { max-width: 520px; margin: 0 auto; padding: 16px 16px calc(28px + env(safe-area-inset-bottom)); }
+  h1 { font-size: 21px; font-weight: 650; margin: 6px 0 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+  .label { display: block; font-size: 14px; color: var(--muted); margin: 0 0 8px; }
+  .label b { color: var(--text); font-weight: 600; }
+  input[type=text], textarea {
+    width: 100%; font: inherit; color: inherit; background: transparent;
+    border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; -webkit-appearance: none; appearance: none;
+  }
+  textarea { resize: vertical; min-height: 120px; }
+  input:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .small { font-size: 13px; color: var(--muted); }
+  .err { display: none; color: var(--err); font-size: 13px; margin-top: 8px; }
+  .err.show { display: block; }
+
+  /* Автоматические данные: время и место одной карточкой */
+  .auto { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; align-items: baseline; }
+  .auto .k { font-size: 14px; color: var(--muted); }
+  .auto .v { font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; min-width: 0; }
+  .auto .v .small { font-weight: 400; }
+  .gps-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+  .pill { display: inline-block; border-radius: 8px; padding: 3px 8px; font-size: 13px; font-weight: 600; }
+  .pill.ok { background: var(--ok-soft); color: var(--ok); }
+  .pill.wait { background: var(--warn-soft); color: var(--warn); }
+  .pill.err { background: var(--err-soft); color: var(--err); }
+  .btn-small {
+    font: inherit; font-size: 14px; color: inherit; background: transparent; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; flex: none;
+  }
+
+  /* Фото */
+  .photo-btns { display: flex; gap: 8px; }
+  .photo-btns button {
+    flex: 1; font: inherit; font-size: 15px; font-weight: 600; color: inherit; cursor: pointer;
+    background: transparent; border: 1px solid var(--line); border-radius: 12px; padding: 14px 8px;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .photo-btns button.main { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+  .photo-btns svg { width: 20px; height: 20px; flex: none; }
+  .thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+  .thumbs:empty { display: none; }
+  .thumb { position: relative; aspect-ratio: 1 / 1; border-radius: 10px; overflow: hidden; background: var(--line); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .thumb button {
+    position: absolute; top: 4px; right: 4px; width: 28px; height: 28px; border-radius: 14px; border: none;
+    background: rgba(0,0,0,.6); color: #fff; font-size: 18px; line-height: 28px; padding: 0; cursor: pointer;
+  }
+
+  .submit {
+    width: 100%; font: inherit; font-size: 18px; font-weight: 650; padding: 16px; margin-top: 4px;
+    border: none; border-radius: 14px; background: var(--accent); color: var(--on-accent); cursor: pointer;
+  }
+  .submit:disabled { opacity: .6; }
+  .notice { border-radius: 12px; padding: 12px 14px; font-size: 14px; margin-bottom: 12px; }
+  .notice.ok { background: var(--ok-soft); color: var(--ok); }
+  .notice.wait { background: var(--warn-soft); color: var(--warn); }
+  .notice.err { background: var(--err-soft); color: var(--err); }
+  .notice .btn-small { margin-top: 8px; border-color: currentColor; color: inherit; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Заметки</h1>
+
+  <div id="demoBanner" class="notice wait hidden">
+    Демо-режим: ссылка на Google Таблицу ещё не вставлена. Заметки пока остаются на этом телефоне.
+  </div>
+
+  <div id="lockScreen" class="card hidden">
+    <p style="margin:0 0 6px; font-weight:600;">Нужна ссылка-приглашение</p>
+    <p class="small" style="margin:0;">Откройте этот сайт по ссылке, которую вам прислали. После первого раза телефон её запомнит.</p>
+  </div>
+
+  <div id="toast" class="notice hidden" role="status" aria-live="polite"></div>
+
+  <div id="queueBox" class="notice wait hidden">
+    <div id="queueText"></div>
+    <div id="queueError" class="small" style="color:inherit; margin-top:4px;"></div>
+    <button type="button" id="flushBtn" class="btn-small">Отправить сейчас</button>
+  </div>
+
+  <form id="form" novalidate class="hidden">
+    <div class="card">
+      <div class="auto">
+        <span class="k">Имя</span>
+        <span class="v" id="nameView"></span>
+        <span class="k">Время</span>
+        <span class="v"><span id="clock">--:--:--</span> <span class="small" id="clockDate"></span></span>
+        <span class="k">Место</span>
+        <span class="v"><span id="gpsCoords">—</span> <span class="small" id="gpsAcc"></span></span>
+      </div>
+      <div class="gps-row">
+        <span class="pill wait" id="gpsPill">Ищу GPS…</span>
+        <button type="button" class="btn-small" id="gpsRetry">Обновить место</button>
+      </div>
+      <div class="small" id="gpsInfo" style="margin-top:6px;"></div>
+      <div id="nameEdit" class="hidden" style="margin-top:12px;">
+        <label class="label" for="name"><b>Ваше имя</b> · вводится один раз</label>
+        <input type="text" id="name" autocomplete="name" placeholder="Как вас зовут">
+        <div class="err" id="err-name">Введите имя</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <span class="label"><b>Фото</b> · по желанию</span>
+      <div class="photo-btns">
+        <button type="button" class="main" id="camBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+          Сфотографировать
+        </button>
+        <button type="button" id="galBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-8 9"/></svg>
+          Из галереи
+        </button>
+      </div>
+      <input type="file" id="camInput" accept="image/*" capture="environment" hidden>
+      <input type="file" id="galInput" accept="image/*" multiple hidden>
+      <div class="small hidden" id="photoBusy" style="margin-top:8px;">Обрабатываю фото…</div>
+      <div class="thumbs" id="thumbs"></div>
+    </div>
+
+    <div class="card">
+      <label class="label" for="text"><b>Текст</b> · по желанию</label>
+      <textarea id="text" rows="5" placeholder="Что видите, мысли, детали"></textarea>
+    </div>
+
+    <button type="submit" class="submit" id="submitBtn">Отправить</button>
+  </form>
+</main>
+
+<script>
+/* ===== НАСТРОЙКИ ===== */
+const CONFIG = {
+  // Ссылка из Google Apps Script — та же, что в index.html
+  SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxte0uPP_RvdI1wk_KuHAe1FYS9LAHPtjq2wggpnNOOeFrAM16cVgt2DY5TiAXjUpvJQg/exec',
+  // Фото: размер длинной стороны, качество, сколько фото максимум в одной заметке
+  PHOTO_MAX_SIDE: 1600,
+  PHOTO_QUALITY: 0.8,
+  PHOTO_LIMIT: 10
+};
+/* ===================== */
+
+const FORM = 'notes';
+const $ = (id) => document.getElementById(id);
+const DEMO = !/^https:\/\//.test(CONFIG.SCRIPT_URL);
+
+/* Имя и ключ общие с формой «Наблюдения» (тот же сайт), очередь — своя */
+const memStore = {};
+const store = {
+  get(k, d) {
+    try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); }
+    catch (e) { return k in memStore ? memStore[k] : d; }
+  },
+  set(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); }
+    catch (e) { memStore[k] = v; }
+  }
+};
+
+/* Очередь неотправленных заметок (вместе с фото) — в базе браузера IndexedDB */
+const Queue = (() => {
+  const mem = new Map();
+  let dbPromise = null;
+  function open() {
+    if (!dbPromise) {
+      dbPromise = new Promise((resolve) => {
+        try {
+          const req = indexedDB.open('opros-notes', 1);
+          req.onupgradeneeded = () => req.result.createObjectStore('queue', { keyPath: 'id' });
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(null);
+          req.onblocked = () => resolve(null);
+        } catch (e) { resolve(null); }
+      });
+    }
+    return dbPromise;
+  }
+  function run(db, mode, fn) {
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('queue', mode);
+      const req = fn(tx.objectStore('queue'));
+      tx.oncomplete = () => resolve(req ? req.result : undefined);
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  }
+  const byTime = (a, b) => a.createdAt - b.createdAt;
+  return {
+    async all() {
+      const db = await open();
+      const list = db ? await run(db, 'readonly', (s) => s.getAll()) : [];
+      return (list || []).concat(Array.from(mem.values())).sort(byTime);
+    },
+    async put(rec) {
+      const db = await open();
+      if (!db) { mem.set(rec.id, rec); return; }
+      try { await run(db, 'readwrite', (s) => s.put(rec)); }
+      catch (e) { mem.set(rec.id, rec); throw e; }
+    },
+    async del(id) {
+      mem.delete(id);
+      const db = await open();
+      if (db) await run(db, 'readwrite', (s) => s.delete(id));
+    }
+  };
+})();
+
+/* Ключ доступа из ссылки-приглашения: ...#k=КЛЮЧ */
+function readKey() {
+  const m = location.hash.match(/[#&]k=([^&]+)/);
+  if (m) store.set('opros_key', decodeURIComponent(m[1]));
+  return store.get('opros_key', '');
+}
+let accessKey = readKey();
+window.addEventListener('hashchange', () => { if (/[#&]k=/.test(location.hash)) location.reload(); });
+
+/* Имя: показываем сохранённое, поле ввода — только если имени ещё нет или его меняют */
+function renderName() {
+  const name = store.get('opros_name', '');
+  const view = $('nameView');
+  view.innerHTML = '';
+  if (name) {
+    view.appendChild(document.createTextNode(name + ' '));
+    const a = document.createElement('button');
+    a.type = 'button';
+    a.className = 'btn-small';
+    a.style.cssText = 'padding:2px 8px; font-size:12px; font-weight:400;';
+    a.textContent = 'изменить';
+    a.addEventListener('click', () => { $('nameEdit').classList.remove('hidden'); $('name').focus(); });
+    view.appendChild(a);
+  } else {
+    view.innerHTML = '<span class="small">не указано</span>';
+    $('nameEdit').classList.remove('hidden');
+  }
+}
+
+/* Время */
+const pad = (n) => String(n).padStart(2, '0');
+function fmtTime(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+function fmtDate(d) { return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.' + d.getFullYear(); }
+function fmtTz(d) {
+  const off = -d.getTimezoneOffset();
+  const sign = off >= 0 ? '+' : '-';
+  const h = Math.floor(Math.abs(off) / 60), m = Math.abs(off) % 60;
+  return 'UTC' + sign + h + (m ? ':' + pad(m) : '');
+}
+function tickClock() {
+  const d = new Date();
+  $('clock').textContent = fmtTime(d);
+  $('clockDate').textContent = fmtDate(d) + ' · ' + fmtTz(d);
+}
+
+/* GPS */
+let pos = null;
+let watchId = null;
+function setGps(kind, text) {
+  const p = $('gpsPill');
+  p.className = 'pill ' + kind;
+  p.textContent = text;
+}
+function renderGps() {
+  if (!pos) return;
+  $('gpsCoords').textContent = pos.lat.toFixed(5) + ', ' + pos.lon.toFixed(5);
+  $('gpsAcc').textContent = '±' + Math.round(pos.acc) + ' м';
+  const age = Math.round((Date.now() - pos.t) / 1000);
+  $('gpsInfo').textContent = age < 5 ? '' : 'Обновлено ' + age + ' сек назад';
+  if (age > 120) setGps('wait', 'Давно не обновлялось');
+  else if (pos.acc <= 30) setGps('ok', 'Место определено');
+  else if (pos.acc <= 150) setGps('wait', 'Средняя точность');
+  else setGps('wait', 'Низкая точность');
+}
+function startGps() {
+  if (!('geolocation' in navigator)) { setGps('err', 'Браузер не умеет определять место'); return; }
+  if (!window.isSecureContext) { setGps('err', 'Нужен адрес https://'); return; }
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  if (!pos) setGps('wait', 'Ищу GPS…');
+  watchId = navigator.geolocation.watchPosition(
+    (p) => {
+      pos = { lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy, t: p.timestamp || Date.now() };
+      renderGps();
+    },
+    (e) => {
+      if (e.code === 1) {
+        setGps('err', 'Нет доступа к геолокации');
+        $('gpsInfo').textContent = 'Разрешите сайту доступ к местоположению в настройках браузера и нажмите «Обновить место».';
+      } else if (!pos) {
+        setGps('err', e.code === 3 ? 'GPS долго не отвечает' : 'Не удаётся определить место');
+        $('gpsInfo').textContent = 'Проверьте, что геолокация в телефоне включена. Под открытым небом GPS ловит лучше.';
+      }
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 30000 }
+  );
+}
+
+/* Фото: уменьшаем на телефоне, чтобы быстрее отправлялись и занимали меньше места */
+let photos = [];
+let photoBusy = 0;
+let sending = false;
+function loadImage(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('Не удалось открыть фото'));
+    img.src = url;
+  });
+}
+async function compressPhoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImage(url);
+    const k = Math.min(1, CONFIG.PHOTO_MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.round(img.naturalWidth * k), h = Math.round(img.naturalHeight * k);
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', CONFIG.PHOTO_QUALITY);
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+async function addPhotos(fileList) {
+  const files = Array.from(fileList || []);
+  const room = CONFIG.PHOTO_LIMIT - photos.length;
+  if (files.length > room) toast('wait', 'Можно не больше ' + CONFIG.PHOTO_LIMIT + ' фото в одной заметке.');
+  const take = files.slice(0, Math.max(0, room));
+  if (!take.length) return;
+  photoBusy++;
+  renderPhotos();
+  for (const f of take) {
+    try { photos.push(await compressPhoto(f)); }
+    catch (e) { toast('err', 'Не удалось добавить одно из фото.'); }
+    renderPhotos();
+  }
+  photoBusy--;
+  renderPhotos();
+}
+function renderPhotos() {
+  const box = $('thumbs');
+  box.innerHTML = '';
+  photos.forEach((src, i) => {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = 'Фото ' + (i + 1);
+    const x = document.createElement('button');
+    x.type = 'button';
+    x.textContent = '×';
+    x.setAttribute('aria-label', 'Удалить фото ' + (i + 1));
+    x.addEventListener('click', () => { photos.splice(i, 1); renderPhotos(); });
+    d.appendChild(img);
+    d.appendChild(x);
+    box.appendChild(d);
+  });
+  $('photoBusy').classList.toggle('hidden', photoBusy === 0);
+  $('submitBtn').disabled = photoBusy > 0 || sending;
+}
+
+/* Сбор заметки */
+function newId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+function collect() {
+  const typed = $('name').value.trim();
+  if (typed) store.set('opros_name', typed);
+  const name = store.get('opros_name', '');
+  if (!name) {
+    $('nameEdit').classList.remove('hidden');
+    $('err-name').classList.add('show');
+    $('name').focus();
+    return null;
+  }
+  $('err-name').classList.remove('show');
+  const text = $('text').value.trim();
+  if (!text && !photos.length && !confirm('Нет ни фото, ни текста. Отправить только время и место?')) return null;
+
+  const d = new Date();
+  return {
+    id: newId(),
+    createdAt: Date.now(),
+    form: FORM,
+    phoneTime: fmtDate(d) + ' ' + fmtTime(d),
+    tz: fmtTz(d),
+    name: name,
+    text: text,
+    lat: pos ? Number(pos.lat.toFixed(6)) : '',
+    lon: pos ? Number(pos.lon.toFixed(6)) : '',
+    acc: pos ? Math.round(pos.acc) : '',
+    photos: photos.map((data, i) => ({ n: i + 1, data: data, url: null }))
+  };
+}
+function resetForm() {
+  $('text').value = '';
+  photos = [];
+  renderPhotos();
+  $('name').value = '';
+  $('nameEdit').classList.add('hidden');
+  renderName();
+}
+
+/* Отправка: заметка сначала сохраняется на телефоне, потом уходит в таблицу.
+   Фото отправляются по одному, затем сама заметка со ссылками на них. */
+let flushing = false;
+let lastError = '';
+
+async function post(payload, timeoutMs) {
+  const ctrl = window.AbortController ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+  try {
+    const res = await fetch(CONFIG.SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(Object.assign({ key: accessKey }, payload)),
+      signal: ctrl ? ctrl.signal : undefined
+    });
+    return await res.json();
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+function explain(code) {
+  return code === 'bad_key' ? 'Неверный ключ доступа. Откройте сайт заново по ссылке-приглашению.'
+    : code === 'secret_not_set' ? 'В скрипте таблицы не задан ключ.'
+    : 'Таблица ответила ошибкой: ' + (code || 'неизвестно');
+}
+async function sendOne(rec, onProgress) {
+  try {
+    for (const p of rec.photos) {
+      if (p.url) continue;
+      onProgress('Отправляю фото ' + p.n + ' из ' + rec.photos.length + '…');
+      const r = await post({ type: 'photo', form: FORM, id: rec.id, n: p.n, phoneTime: rec.phoneTime, data: p.data.split(',')[1] }, 90000);
+      if (!r || !r.ok) { lastError = explain(r && r.error); return false; }
+      p.url = r.url;
+      p.data = null;
+      await Queue.put(rec);
+    }
+    onProgress('Отправляю заметку…');
+    const body = Object.assign({}, rec, { type: 'record', photos: rec.photos.map((p) => p.url) });
+    delete body.createdAt;
+    const r = await post(body, 30000);
+    if (!r || !r.ok) { lastError = explain(r && r.error); return false; }
+    return true;
+  } catch (e) {
+    lastError = 'Нет связи с таблицей. Проверьте интернет (и VPN).';
+    return false;
+  }
+}
+async function flush(onProgress) {
+  onProgress = onProgress || (() => {});
+  if (flushing || DEMO || !accessKey) { await renderQueue(); return 0; }
+  flushing = true;
+  let sent = 0;
+  try {
+    const list = await Queue.all();
+    for (const rec of list) {
+      if (!(await sendOne(rec, onProgress))) break;
+      await Queue.del(rec.id);
+      sent++;
+    }
+    if (!(await Queue.all()).length) lastError = '';
+  } finally {
+    flushing = false;
+    await renderQueue();
+  }
+  return sent;
+}
+
+async function renderQueue() {
+  const list = await Queue.all();
+  const n = list.length;
+  const ph = list.reduce((a, r) => a + r.photos.filter((p) => !p.url).length, 0);
+  $('queueBox').classList.toggle('hidden', n === 0);
+  $('queueText').textContent = 'Ждут отправки на телефоне: ' + n + (ph ? ' (фото: ' + ph + ')' : '');
+  $('queueError').textContent = DEMO ? 'Демо-режим: отправка выключена.' : lastError;
+  $('flushBtn').classList.toggle('hidden', DEMO);
+}
+
+let toastTimer = null;
+function toast(kind, text, keep) {
+  const t = $('toast');
+  t.className = 'notice ' + kind;
+  t.textContent = text;
+  clearTimeout(toastTimer);
+  if (!keep) toastTimer = setTimeout(() => t.classList.add('hidden'), 6000);
+}
+
+async function onSubmit(e) {
+  e.preventDefault();
+  if (photoBusy > 0) return;
+  const rec = collect();
+  if (!rec) return;
+  if (!pos && !confirm('Координаты ещё не определены. Отправить без них?')) return;
+
+  const btn = $('submitBtn');
+  sending = true;
+  btn.disabled = true;
+  try {
+    await Queue.put(rec);
+  } catch (err) {
+    toast('err', 'На телефоне не хватает места. Заметка пока хранится только до закрытия страницы — дождитесь интернета.', true);
+  }
+  resetForm();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  if (DEMO) {
+    toast('wait', 'Записано на телефоне (демо-режим).');
+  } else {
+    toast('wait', 'Отправляю…', true);
+    await flush((msg) => toast('wait', msg, true));
+    const stillHere = (await Queue.all()).some((r) => r.id === rec.id);
+    if (stillHere) toast('wait', 'Нет связи. Заметка сохранена на телефоне и отправится сама, когда появится интернет.');
+    else toast('ok', 'Отправлено ✓');
+  }
+  await renderQueue();
+  sending = false;
+  btn.disabled = photoBusy > 0;
+}
+
+/* Запуск */
+async function init() {
+  renderName();
+  $('name').addEventListener('input', () => $('err-name').classList.remove('show'));
+  $('name').addEventListener('change', () => {
+    const v = $('name').value.trim();
+    if (v) { store.set('opros_name', v); renderName(); }
+  });
+
+  $('camBtn').addEventListener('click', () => $('camInput').click());
+  $('galBtn').addEventListener('click', () => $('galInput').click());
+  ['camInput', 'galInput'].forEach((id) => {
+    $(id).addEventListener('change', async (e) => {
+      await addPhotos(e.target.files);
+      e.target.value = '';
+    });
+  });
+
+  $('gpsRetry').addEventListener('click', startGps);
+  $('flushBtn').addEventListener('click', async () => {
+    const sent = await flush((msg) => toast('wait', msg, true));
+    if (sent) toast('ok', 'Отправлено: ' + sent + ' ✓');
+    else toast('wait', 'Пока не получилось. Попробую ещё раз автоматически.');
+  });
+  $('form').addEventListener('submit', onSubmit);
+
+  if (DEMO) $('demoBanner').classList.remove('hidden');
+  if (!DEMO && !accessKey) { $('lockScreen').classList.remove('hidden'); return; }
+  $('form').classList.remove('hidden');
+
+  tickClock();
+  setInterval(tickClock, 1000);
+  setInterval(renderGps, 5000);
+  startGps();
+
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  await renderQueue();
+  flush();
+  setInterval(async () => { if ((await Queue.all()).length) flush(); }, 30000);
+  window.addEventListener('online', () => flush());
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { flush(); renderGps(); } });
+}
+init();
+</script>
+</body>
+</html>
